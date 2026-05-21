@@ -54,7 +54,7 @@ export function SaleHistory({ refresh }: { refresh: number }) {
     const res = await fetch(`/api/sales?${params}`);
     const data = await res.json();
     setSales(data);
-    const allTeams = [...new Set(data.flatMap((s: Sale) => s.items.map((i) => i.product.team)))] as string[];
+    const allTeams = Array.from(new Set(data.flatMap((s: Sale) => s.items.map((i) => i.product.team)))) as string[];
     setTeams(allTeams.sort());
     setLoading(false);
   }, [from, to, teamFilter, statusFilter, refresh]);

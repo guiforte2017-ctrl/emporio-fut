@@ -39,7 +39,7 @@ export function ProductTable() {
     fetchProducts();
   }
 
-  const teams = [...new Set(products.map((p) => p.team))].sort();
+  const teams = Array.from(new Set(products.map((p) => p.team))).sort();
 
   return (
     <div className="flex flex-col gap-4">
