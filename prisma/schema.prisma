@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  team      String
+  model     String   // home, away, third, retro
+  size      String   // PP, P, M, G, GG, XGG
+  quantity  Int      @default(0)
+  costPrice Float
+  sellPrice Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  saleItems SaleItem[]
+
+  @@unique([team, model, size])
+}
+
+model Sale {
+  id            Int      @id @default(autoincrement())
+  date          DateTime @default(now())
+  paymentMethod String   // pix, card, cash
+  total         Float
+  customerName  String?
+  paymentStatus String   @default("pago") // pago | pendente
+  createdAt     DateTime @default(now())
+
+  items SaleItem[]
+}
+
+model Order {
+  id               Int       @id @default(autoincrement())
+  type             String
+  quantity         Int
+  value            Float
+  taxes            Float?
+  packagingCost    Float?
+  orderDate        DateTime
+  trackingCode     String?
+  sizes            String?
+  payment          String?
+  status           String    @default("Informações enviadas")
+  lastUpdate       DateTime?
+  cpf              String?
+  orderedBy        String?
+  estimatedArrival String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  lots InventoryLot[]
+}
+
+model InventoryLot {
+  id          Int      @id @default(autoincrement())
+  lotType     String   // "Torcedor Amarela" | "Torcedor Azul" | "Jogador Amarela" | "Jogador Azul" | "Personalizado"
+  quantity    Int
+  remaining   Int
+  costPerUnit Float
+  orderId     Int?
+  receivedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  order Order? @relation(fields: [orderId], references: [id])
+}
+
+model SaleItem {
+  id        Int  @id @default(autoincrement())
+  saleId    Int
+  productId Int
+  quantity  Int
+  unitPrice Float
+  costPrice Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
