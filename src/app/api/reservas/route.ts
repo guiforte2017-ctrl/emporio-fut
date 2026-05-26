@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   // If paid: immediately auto-fulfill from available stock
   if (paymentStatus === "pago") {
-    const productIds = [...new Set(reserva.items.map((i) => i.productId))];
+    const productIds = Array.from(new Set(reserva.items.map((i) => i.productId)));
     await Promise.all(productIds.map((id) => autoFulfillReservas(id)));
   }
 

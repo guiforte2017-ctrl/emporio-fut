@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // If payment just confirmed → auto-fulfill from stock
   if (body.paymentStatus === "pago" && wasNotPaid) {
-    const productIds = [...new Set(reserva.items.map((i) => i.productId))];
+    const productIds = Array.from(new Set(reserva.items.map((i) => i.productId)));
     await Promise.all(productIds.map((id) => autoFulfillReservas(id)));
   }
 
