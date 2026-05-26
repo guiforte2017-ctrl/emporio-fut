@@ -1,35 +1,111 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Trash2, Plus, AlertTriangle, Filter } from "lucide-react";
+import { Pencil, Trash2, Plus, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { ProductForm } from "./ProductForm";
-import { formatCurrency, MODEL_LABELS, SIZES } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@prisma/client";
+
+const SIZES = ["PP", "P", "M", "G", "GG"];
+
+const MODEL_CONFIG: Record<string, {
+  label: string;
+  emoji: string;
+  header: string;
+  bg: string;
+  chip: string;
+  chipActive: string;
+}> = {
+  "Torcedor Masc Amarela": {
+    label: "Torcedor Masculino",
+    emoji: "🟡",
+    header: "bg-amber-400 text-amber-950",
+    bg: "bg-amber-50 border-amber-200",
+    chip: "bg-white border-amber-200 text-slate-400",
+    chipActive: "bg-white border-amber-300 text-slate-800",
+  },
+  "Torcedor Masc Azul": {
+    label: "Torcedor Masculino",
+    emoji: "🔵",
+    header: "bg-blue-600 text-white",
+    bg: "bg-blue-50 border-blue-200",
+    chip: "bg-white border-blue-200 text-slate-400",
+    chipActive: "bg-white border-blue-300 text-slate-800",
+  },
+  "Torcedor Fem Amarela": {
+    label: "Torcedor Feminino",
+    emoji: "🟡",
+    header: "bg-yellow-300 text-yellow-950",
+    bg: "bg-yellow-50 border-yellow-200",
+    chip: "bg-white border-yellow-200 text-slate-400",
+    chipActive: "bg-white border-yellow-300 text-slate-800",
+  },
+  "Torcedor Fem Azul": {
+    label: "Torcedor Feminino",
+    emoji: "🔵",
+    header: "bg-indigo-500 text-white",
+    bg: "bg-indigo-50 border-indigo-200",
+    chip: "bg-white border-indigo-200 text-slate-400",
+    chipActive: "bg-white border-indigo-300 text-slate-800",
+  },
+  "Jogador Masc Amarela": {
+    label: "Jogador Masculino",
+    emoji: "🟡",
+    header: "bg-orange-400 text-orange-950",
+    bg: "bg-orange-50 border-orange-200",
+    chip: "bg-white border-orange-200 text-slate-400",
+    chipActive: "bg-white border-orange-300 text-slate-800",
+  },
+  "Jogador Masc Azul": {
+    label: "Jogador Masculino",
+    emoji: "🔵",
+    header: "bg-sky-600 text-white",
+    bg: "bg-sky-50 border-sky-200",
+    chip: "bg-white border-sky-200 text-slate-400",
+    chipActive: "bg-white border-sky-300 text-slate-800",
+  },
+  "Personalizado": {
+    label: "Personalizado",
+    emoji: "⚙️",
+    header: "bg-slate-400 text-white",
+    bg: "bg-slate-50 border-slate-200",
+    chip: "bg-white border-slate-200 text-slate-400",
+    chipActive: "bg-white border-slate-300 text-slate-800",
+  },
+};
+
+const MODEL_ORDER = [
+  "Torcedor Masc Amarela",
+  "Torcedor Masc Azul",
+  "Torcedor Fem Amarela",
+  "Torcedor Fem Azul",
+  "Jogador Masc Amarela",
+  "Jogador Masc Azul",
+  "Personalizado",
+];
+
+function qtyColor(qty: number) {
+  if (qty === 0) return "text-slate-300";
+  if (qty <= 2) return "text-red-500 font-bold";
+  if (qty <= 5) return "text-amber-500 font-semibold";
+  return "text-green-600 font-semibold";
+}
 
 export function ProductTable() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [teamFilter, setTeamFilter] = useState("");
-  const [sizeFilter, setSizeFilter] = useState("all");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (teamFilter) params.set("team", teamFilter);
-    if (sizeFilter && sizeFilter !== "all") params.set("size", sizeFilter);
-    const res = await fetch(`/api/products?${params}`);
-    const data = await res.json();
-    setProducts(data);
+    const res = await fetch("/api/products");
+    setProducts(await res.json());
     setLoading(false);
-  }, [teamFilter, sizeFilter]);
+  }, []);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -39,133 +115,156 @@ export function ProductTable() {
     fetchProducts();
   }
 
-  const teams = Array.from(new Set(products.map((p) => p.team))).sort();
+  // Group products by model
+  const byModel: Record<string, Record<string, Product>> = {};
+  for (const p of products) {
+    if (!byModel[p.model]) byModel[p.model] = {};
+    byModel[p.model][p.size] = p;
+  }
+
+  const totalCritical = products.filter((p) => p.quantity <= 2 && !SIZES.includes("XGG") || (p.quantity <= 2 && p.size !== "XGG")).length;
+
+  if (loading) {
+    return <div className="py-16 text-center text-slate-400">Carregando...</div>;
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Filters + Add */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Filtrar por time..."
-          value={teamFilter}
-          onChange={(e) => setTeamFilter(e.target.value)}
-          className="sm:w-52"
-        />
-        <Select value={sizeFilter} onValueChange={setSizeFilter}>
-          <SelectTrigger className="sm:w-36">
-            <Filter className="h-3.5 w-3.5 text-slate-400 mr-1" />
-            <SelectValue placeholder="Tamanho" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos tamanhos</SelectItem>
-            {SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="sm:ml-auto">
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4" />Nova Camisa</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Camisa</DialogTitle>
-              </DialogHeader>
-              <ProductForm onSuccess={() => { setAddOpen(false); fetchProducts(); }} onCancel={() => setAddOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500">{products.length} produtos cadastrados</p>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4" />Nova Camisa</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Adicionar Camisa</DialogTitle></DialogHeader>
+            <ProductForm onSuccess={() => { setAddOpen(false); fetchProducts(); }} onCancel={() => setAddOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left px-4 py-3 font-medium text-slate-500">Time</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-500">Modelo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-500">Tam.</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-500">Qtd</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-500 hidden sm:table-cell">Custo</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-500">Venda</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-400">Carregando...</td></tr>
-              ) : products.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-400">Nenhum produto encontrado</td></tr>
-              ) : (
-                products.map((p) => (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-800">{p.team}</td>
-                    <td className="px-4 py-3 text-slate-600">{MODEL_LABELS[p.model] ?? p.model}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="outline">{p.size}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`font-semibold ${p.quantity <= 2 ? "text-red-600" : p.quantity <= 5 ? "text-amber-600" : "text-slate-800"}`}>
-                        {p.quantity <= 2 && <AlertTriangle className="inline h-3 w-3 mr-1" />}
-                        {p.quantity}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-500 hidden sm:table-cell">{formatCurrency(p.costPrice)}</td>
-                    <td className="px-4 py-3 text-right text-brand-600 font-medium">{formatCurrency(p.sellPrice)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1 justify-end">
-                        <Dialog open={editProduct?.id === p.id} onOpenChange={(open) => !open && setEditProduct(null)}>
-                          <DialogTrigger asChild>
-                            <Button size="icon" variant="ghost" onClick={() => setEditProduct(p)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader><DialogTitle>Editar Camisa</DialogTitle></DialogHeader>
-                            <ProductForm
-                              initial={p}
-                              onSuccess={() => { setEditProduct(null); fetchProducts(); }}
-                              onCancel={() => setEditProduct(null)}
-                            />
-                          </DialogContent>
-                        </Dialog>
-
-                        <Dialog open={deleteId === p.id} onOpenChange={(open) => !open && setDeleteId(null)}>
-                          <DialogTrigger asChild>
-                            <Button size="icon" variant="ghost" onClick={() => setDeleteId(p.id)}>
-                              <Trash2 className="h-4 w-4 text-red-400" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader><DialogTitle>Confirmar exclusão</DialogTitle></DialogHeader>
-                            <p className="text-sm text-slate-500 mb-4">
-                              Tem certeza que quer excluir <strong className="text-slate-800">{p.team} {MODEL_LABELS[p.model]} {p.size}</strong>?
-                            </p>
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
-                              <Button variant="destructive" onClick={() => handleDelete(p.id)}>Excluir</Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Low stock summary */}
-      {products.filter((p) => p.quantity <= 2).length > 0 && (
+      {/* Low stock alert */}
+      {products.filter((p) => p.quantity <= 2 && p.size !== "XGG").length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
-            <strong>{products.filter((p) => p.quantity <= 2).length}</strong> item(s) com estoque crítico (≤ 2 unidades)
+            <strong>{products.filter((p) => p.quantity <= 2 && p.size !== "XGG").length}</strong> item(s) com estoque crítico (≤ 2 unidades)
           </span>
         </div>
       )}
+
+      {/* Grouped cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {MODEL_ORDER.map((model) => {
+          const cfg = MODEL_CONFIG[model];
+          const sizes = byModel[model] ?? {};
+          const hasAny = Object.values(sizes).some((p) => p.quantity > 0);
+          const firstProduct = Object.values(sizes)[0];
+          if (!cfg) return null;
+
+          return (
+            <div key={model} className={`rounded-xl border overflow-hidden shadow-sm ${cfg.bg}`}>
+              {/* Card header */}
+              <div className={`px-4 py-3 flex items-center justify-between ${cfg.header}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{cfg.emoji}</span>
+                  <div>
+                    <p className="text-xs font-medium opacity-80">{cfg.label}</p>
+                    <p className="text-sm font-bold leading-tight">
+                      {model.includes("Amarela") ? "Amarela" : model.includes("Azul") ? "Azul" : model}
+                    </p>
+                  </div>
+                </div>
+                {firstProduct && (
+                  <div className="text-right">
+                    <p className="text-xs opacity-70">venda</p>
+                    <p className="text-sm font-bold">{formatCurrency(firstProduct.sellPrice)}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Sizes grid */}
+              <div className="p-3">
+                <div className="grid grid-cols-5 gap-2">
+                  {SIZES.map((size) => {
+                    const p = sizes[size];
+                    const qty = p?.quantity ?? 0;
+
+                    return (
+                      <div
+                        key={size}
+                        className={`relative group rounded-lg border text-center py-2 px-1 ${qty > 0 ? cfg.chipActive : cfg.chip}`}
+                      >
+                        <p className="text-xs text-slate-400 mb-1">{size}</p>
+                        <p className={`text-base leading-none ${qtyColor(qty)}`}>
+                          {qty <= 2 && qty > 0 && <AlertTriangle className="inline h-3 w-3 mr-0.5 mb-0.5" />}
+                          {qty}
+                        </p>
+
+                        {/* Edit/delete on hover */}
+                        {p && (
+                          <div className="absolute inset-0 rounded-lg bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                            <Dialog open={editProduct?.id === p.id} onOpenChange={(open) => !open && setEditProduct(null)}>
+                              <DialogTrigger asChild>
+                                <button
+                                  onClick={() => setEditProduct(p)}
+                                  className="rounded p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader><DialogTitle>Editar {model} {size}</DialogTitle></DialogHeader>
+                                <ProductForm
+                                  initial={p}
+                                  onSuccess={() => { setEditProduct(null); fetchProducts(); }}
+                                  onCancel={() => setEditProduct(null)}
+                                />
+                              </DialogContent>
+                            </Dialog>
+
+                            <Dialog open={deleteId === p.id} onOpenChange={(open) => !open && setDeleteId(null)}>
+                              <DialogTrigger asChild>
+                                <button
+                                  onClick={() => setDeleteId(p.id)}
+                                  className="rounded p-1 text-red-400 hover:text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader><DialogTitle>Excluir {model} {size}?</DialogTitle></DialogHeader>
+                                <p className="text-sm text-slate-500 mb-4">Essa ação não pode ser desfeita.</p>
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+                                  <Button variant="destructive" onClick={() => handleDelete(p.id)}>Excluir</Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Cost + total */}
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-500 border-t border-current/10 pt-2">
+                  <span>
+                    Custo: <strong>{firstProduct ? formatCurrency(firstProduct.costPrice) : "—"}</strong>
+                  </span>
+                  <span>
+                    Total: <strong className={hasAny ? "text-slate-700" : "text-slate-400"}>
+                      {Object.values(sizes).reduce((s, p) => s + (p.quantity ?? 0), 0)} un.
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

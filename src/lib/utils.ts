@@ -51,6 +51,6 @@ export const PAYMENT_LABELS: Record<string, string> = {
   cash: "Dinheiro",
 };
 
-export const SIZES = ["PP", "P", "M", "G", "GG", "XGG"];
+export const SIZES = ["PP", "P", "M", "G", "GG"];
 export const MODELS = COPA_MODELS;
 export const PAYMENT_METHODS = ["pix", "card", "cash"];
