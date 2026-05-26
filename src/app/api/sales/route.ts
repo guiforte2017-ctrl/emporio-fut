@@ -35,23 +35,25 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { items, paymentMethod, date, customerName, paymentStatus } = body;
+  const { items, paymentMethod, date, customerName, paymentStatus, isReserva } = body;
 
   if (!items?.length || !paymentMethod) {
     return NextResponse.json({ error: "Campos obrigatórios ausentes" }, { status: 400 });
   }
 
-  // Validate stock for all items
-  for (const item of items) {
-    const product = await prisma.product.findUnique({ where: { id: item.productId } });
-    if (!product) {
-      return NextResponse.json({ error: `Produto ${item.productId} não encontrado` }, { status: 404 });
-    }
-    if (product.quantity < item.quantity) {
-      return NextResponse.json(
-        { error: `Estoque insuficiente para ${product.team} ${product.model} ${product.size}` },
-        { status: 400 }
-      );
+  // Validate stock only for normal sales (not reservas)
+  if (!isReserva) {
+    for (const item of items) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (!product) {
+        return NextResponse.json({ error: `Produto ${item.productId} não encontrado` }, { status: 404 });
+      }
+      if (product.quantity < item.quantity) {
+        return NextResponse.json(
+          { error: `Estoque insuficiente para ${product.team} ${product.model} ${product.size}` },
+          { status: 400 }
+        );
+      }
     }
   }
 
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
         date: date ? new Date(date) : new Date(),
         customerName: customerName ?? null,
         paymentStatus: paymentStatus ?? "pago",
+        isReserva: isReserva ?? false,
         items: {
           create: itemsWithFifoCost.map((i) => ({
             productId: i.productId,
@@ -92,11 +95,14 @@ export async function POST(req: NextRequest) {
       include: { items: { include: { product: true } } },
     });
 
-    for (const item of itemsWithFifoCost) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { quantity: { decrement: item.quantity } },
-      });
+    // Only deduct stock for normal sales, not reservas
+    if (!isReserva) {
+      for (const item of itemsWithFifoCost) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { quantity: { decrement: item.quantity } },
+        });
+      }
     }
 
     return newSale;

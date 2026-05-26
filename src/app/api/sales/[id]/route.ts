@@ -30,12 +30,14 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
   if (!sale) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
 
   await prisma.$transaction(async (tx) => {
-    // Restore stock
-    for (const item of sale.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { quantity: { increment: item.quantity } },
-      });
+    // Only restore stock if it was a normal sale (not a reserva)
+    if (!sale.isReserva) {
+      for (const item of sale.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { quantity: { increment: item.quantity } },
+        });
+      }
     }
     await tx.sale.delete({ where: { id: Number(params.id) } });
   });

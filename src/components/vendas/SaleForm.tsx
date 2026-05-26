@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -29,6 +29,7 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
   const [paymentStatus, setPaymentStatus] = useState("pago");
   const [customerName, setCustomerName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [isReserva, setIsReserva] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -65,6 +66,11 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
 
   const total = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
 
+  // In reserva mode, show all products; otherwise only products with stock
+  const availableProducts = isReserva
+    ? products
+    : products.filter((p) => p.quantity > 0);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -78,7 +84,7 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
     const res = await fetch("/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items, paymentMethod, paymentStatus, customerName: customerName || null, date }),
+      body: JSON.stringify({ items, paymentMethod, paymentStatus, customerName: customerName || null, date, isReserva }),
     });
 
     if (!res.ok) {
@@ -92,15 +98,40 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
     onSuccess();
   }
 
-  const availableProducts = products.filter((p) => p.quantity > 0);
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+      {/* Reserva toggle */}
+      <button
+        type="button"
+        onClick={() => setIsReserva((v) => !v)}
+        className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm text-left transition-colors ${
+          isReserva
+            ? "border-purple-300 bg-purple-50 text-purple-800"
+            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+        }`}
+      >
+        <BookmarkCheck className={`h-5 w-5 shrink-0 ${isReserva ? "text-purple-600" : "text-slate-400"}`} />
+        <div>
+          <p className="font-medium">
+            {isReserva ? "Modo Reserva ativado" : "Registrar como Reserva"}
+          </p>
+          <p className="text-xs mt-0.5 opacity-70">
+            {isReserva
+              ? "Não desconta do estoque — camisa ainda não chegou"
+              : "Use quando a camisa ainda não chegou mas já foi vendida/separada"}
+          </p>
+        </div>
+        <div className={`ml-auto w-9 h-5 rounded-full transition-colors shrink-0 ${isReserva ? "bg-purple-500" : "bg-slate-200"}`}>
+          <div className={`w-4 h-4 bg-white rounded-full shadow mt-0.5 transition-transform ${isReserva ? "translate-x-4" : "translate-x-0.5"}`} />
+        </div>
+      </button>
+
       {/* Items */}
       <div className="flex flex-col gap-3">
-        <Label>Itens da Venda</Label>
+        <Label>Itens da {isReserva ? "Reserva" : "Venda"}</Label>
         {items.map((item, idx) => (
-          <div key={idx} className="rounded-lg border border-surface-600 bg-surface-700 p-3 flex flex-col gap-2">
+          <div key={idx} className={`rounded-lg border p-3 flex flex-col gap-2 ${isReserva ? "border-purple-200 bg-purple-50/50" : "border-slate-200 bg-slate-50"}`}>
             <div className="flex gap-2 items-start">
               <div className="flex-1 min-w-0">
                 <Select
@@ -113,7 +144,8 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
                   <SelectContent>
                     {availableProducts.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)}>
-                        {p.team} — {MODEL_LABELS[p.model]} {p.size} (est: {p.quantity})
+                        {p.team} — {MODEL_LABELS[p.model]} {p.size}
+                        {isReserva ? ` (est: ${p.quantity})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -178,7 +210,7 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Status</Label>
+          <Label>Status Pagamento</Label>
           <Select value={paymentStatus} onValueChange={setPaymentStatus}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -199,17 +231,21 @@ export function SaleForm({ onSuccess, onCancel }: SaleFormProps) {
       </div>
 
       {/* Total */}
-      <div className="rounded-lg bg-surface-700 border border-surface-500 px-4 py-3 flex items-center justify-between">
-        <span className="text-sm text-gray-400">Total da venda</span>
-        <span className="text-xl font-bold text-brand-400">{formatCurrency(total)}</span>
+      <div className={`rounded-lg border px-4 py-3 flex items-center justify-between ${isReserva ? "bg-purple-50 border-purple-200" : "bg-slate-50 border-slate-200"}`}>
+        <span className="text-sm text-slate-500">Total da {isReserva ? "reserva" : "venda"}</span>
+        <span className={`text-xl font-bold ${isReserva ? "text-purple-700" : "text-brand-600"}`}>{formatCurrency(total)}</span>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Registrando..." : "Registrar Venda"}
+        <Button
+          type="submit"
+          disabled={loading}
+          className={isReserva ? "bg-purple-600 hover:bg-purple-500" : ""}
+        >
+          {loading ? "Registrando..." : isReserva ? "Registrar Reserva" : "Registrar Venda"}
         </Button>
       </div>
     </form>

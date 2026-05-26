@@ -23,6 +23,7 @@ interface Sale {
   paymentMethod: string;
   paymentStatus: string;
   customerName: string | null;
+  isReserva: boolean;
   total: number;
   items: SaleItemData[];
 }
@@ -157,6 +158,11 @@ export function SaleHistory({ refresh }: { refresh: number }) {
                   </span>
                 </div>
 
+                {sale.isReserva && (
+                  <span className="shrink-0 hidden sm:inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                    Reserva
+                  </span>
+                )}
                 <Badge
                   variant={sale.paymentStatus === "pago" ? "success" : "warning"}
                   className="shrink-0 hidden sm:flex"
