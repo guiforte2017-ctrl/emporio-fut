@@ -1,5 +1,60 @@
 import { prisma } from "./prisma";
 
+// ---------------------------------------------------------------------------
+// CUSTO MÉDIO PONDERADO POR TIPO DE CAMISA
+// Calcula o custo médio de cada modelo baseado nos pedidos entregues
+// ---------------------------------------------------------------------------
+
+// Mapeamento: tipo do pedido → modelo(s) e fração da quantidade
+const ORDER_TYPE_COST_MAP: Record<string, { model: string; frac: number }[]> = {
+  "Amarela Torc":    [{ model: "Torcedor Masc Amarela", frac: 1   }],
+  "Azul Torc":       [{ model: "Torcedor Masc Azul",    frac: 1   }],
+  "Amarela FEM":     [{ model: "Torcedor Fem Amarela",  frac: 1   }],
+  "Azul FEM":        [{ model: "Torcedor Fem Azul",     frac: 1   }],
+  "Am + Az Torc":    [{ model: "Torcedor Masc Amarela", frac: 0.5 }, { model: "Torcedor Masc Azul", frac: 0.5 }],
+  "Am + Az Jogador": [{ model: "Jogador Masc Amarela",  frac: 0.5 }, { model: "Jogador Masc Azul",  frac: 0.5 }],
+  "Amarela Jog":     [{ model: "Jogador Masc Amarela",  frac: 1   }],
+  "Azul Jog":        [{ model: "Jogador Masc Azul",     frac: 1   }],
+};
+
+// Retorna custo médio ponderado por modelo, calculado dos pedidos entregues
+export async function computeAverageCosts(): Promise<Record<string, number>> {
+  const orders = await prisma.order.findMany({ where: { status: "Entregue" } });
+
+  const acc: Record<string, { totalCost: number; totalQty: number }> = {};
+
+  for (const order of orders) {
+    const mappings = ORDER_TYPE_COST_MAP[order.type];
+    if (!mappings) continue;
+
+    const unitCost =
+      (order.value + (order.taxes ?? 0) + (order.packagingCost ?? 0)) / order.quantity;
+
+    for (const { model, frac } of mappings) {
+      const qty = Math.round(order.quantity * frac);
+      if (!acc[model]) acc[model] = { totalCost: 0, totalQty: 0 };
+      acc[model].totalCost += unitCost * qty;
+      acc[model].totalQty  += qty;
+    }
+  }
+
+  const averages: Record<string, number> = {};
+  for (const [model, { totalCost, totalQty }] of Object.entries(acc)) {
+    averages[model] = totalQty > 0 ? totalCost / totalQty : 0;
+  }
+  return averages;
+}
+
+// Retorna o custo médio ponderado para um modelo específico
+export async function getAverageCostForModel(productModel: string): Promise<number> {
+  const averages = await computeAverageCosts();
+  return averages[productModel] ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// MAPEAMENTO DE ESTOQUE
+// ---------------------------------------------------------------------------
+
 // Mapping: order type → product model(s) to update in stock
 const ORDER_TO_MODELS: Record<string, string[]> = {
   "Amarela Torc":    ["Torcedor Masc Amarela"],

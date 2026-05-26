@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getLotType, consumeFifo } from "@/lib/fifo";
+import { getAverageCostForModel } from "@/lib/fifo";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -60,16 +60,14 @@ export async function POST(req: NextRequest) {
     0
   );
 
-  // Resolve FIFO cost for each item BEFORE the transaction
+  // Resolve custo médio ponderado por tipo de camisa
   const itemsWithFifoCost = await Promise.all(
     items.map(async (i: { productId: number; quantity: number; unitPrice: number; costPrice: number }) => {
       const product = await prisma.product.findUnique({ where: { id: i.productId } });
-      const lotType = product ? getLotType(product.model) : "Personalizado";
-      const fifoCost = await consumeFifo(lotType, i.quantity);
+      const avgCost = product ? await getAverageCostForModel(product.model) : 0;
       return {
         ...i,
-        costPrice: fifoCost > 0 ? fifoCost : (product?.costPrice ?? i.costPrice),
-        lotType,
+        costPrice: avgCost > 0 ? avgCost : (product?.costPrice ?? i.costPrice),
       };
     })
   );
