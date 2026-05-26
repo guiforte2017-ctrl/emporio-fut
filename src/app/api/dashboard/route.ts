@@ -13,8 +13,11 @@ export async function GET(req: NextRequest) {
   else if (period === "30") fromDate = startOfDay(subDays(now, 29));
   // "all" = no filter
 
+  // Only count confirmed (pago) sales for financial metrics
+  const paidFilter = { paymentStatus: "pago" };
+
   const sales = await prisma.sale.findMany({
-    where: fromDate ? { date: { gte: fromDate } } : {},
+    where: fromDate ? { date: { gte: fromDate }, ...paidFilter } : paidFilter,
     include: { items: true },
     orderBy: { date: "asc" },
   });
@@ -27,24 +30,30 @@ export async function GET(req: NextRequest) {
   const grossProfit = totalRevenue - totalCost;
   const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
-  // Sales by day
+  // Sales by day (paid only)
   const salesByDay: Record<string, number> = {};
   for (const sale of sales) {
     const day = format(new Date(sale.date), "dd/MM");
     salesByDay[day] = (salesByDay[day] ?? 0) + sale.total;
   }
 
-  // Sales by month (always for chart variety)
-  const allSales = await prisma.sale.findMany({ include: { items: true }, orderBy: { date: "asc" } });
+  // Sales by month (paid only, all time)
+  const allSales = await prisma.sale.findMany({
+    where: paidFilter,
+    include: { items: true },
+    orderBy: { date: "asc" },
+  });
   const salesByMonth: Record<string, number> = {};
   for (const sale of allSales) {
     const month = format(new Date(sale.date), "MM/yyyy");
     salesByMonth[month] = (salesByMonth[month] ?? 0) + sale.total;
   }
 
-  // Top teams
+  // Top teams (paid only)
   const saleItems = await prisma.saleItem.findMany({
-    where: fromDate ? { sale: { date: { gte: fromDate } } } : {},
+    where: fromDate
+      ? { sale: { date: { gte: fromDate }, ...paidFilter } }
+      : { sale: paidFilter },
     include: { product: true },
   });
 
@@ -67,10 +76,10 @@ export async function GET(req: NextRequest) {
     orderBy: { quantity: "asc" },
   });
 
-  // Payment breakdown
+  // Payment breakdown (paid only)
   const paymentBreakdown = await prisma.sale.groupBy({
     by: ["paymentMethod"],
-    where: fromDate ? { date: { gte: fromDate } } : {},
+    where: fromDate ? { date: { gte: fromDate }, ...paidFilter } : paidFilter,
     _sum: { total: true },
     _count: true,
   });

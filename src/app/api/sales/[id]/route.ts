@@ -10,6 +10,18 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   return NextResponse.json(sale);
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const body = await req.json();
+  const sale = await prisma.sale.update({
+    where: { id: Number(params.id) },
+    data: {
+      ...(body.paymentStatus != null ? { paymentStatus: body.paymentStatus } : {}),
+      ...(body.paymentMethod != null ? { paymentMethod: body.paymentMethod } : {}),
+    },
+  });
+  return NextResponse.json(sale);
+}
+
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
   const sale = await prisma.sale.findUnique({
     where: { id: Number(params.id) },

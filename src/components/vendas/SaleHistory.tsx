@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trash2, ChevronDown, ChevronRight, User } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, User, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
@@ -64,6 +64,15 @@ export function SaleHistory({ refresh }: { refresh: number }) {
   async function handleDelete(id: number) {
     await fetch(`/api/sales/${id}`, { method: "DELETE" });
     setDeleteId(null);
+    fetchSales();
+  }
+
+  async function handleConfirmPayment(id: number) {
+    await fetch(`/api/sales/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentStatus: "pago" }),
+    });
     fetchSales();
   }
 
@@ -160,6 +169,16 @@ export function SaleHistory({ refresh }: { refresh: number }) {
                 </Badge>
 
                 <span className="text-brand-600 font-semibold text-sm shrink-0">{formatCurrency(sale.total)}</span>
+
+                {sale.paymentStatus === "pendente" && (
+                  <button
+                    title="Confirmar pagamento"
+                    onClick={(e) => { e.stopPropagation(); handleConfirmPayment(sale.id); }}
+                    className="shrink-0 rounded-lg p-1.5 text-amber-500 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                  </button>
+                )}
 
                 <Dialog open={deleteId === sale.id} onOpenChange={(open) => !open && setDeleteId(null)}>
                   <DialogTrigger asChild>
