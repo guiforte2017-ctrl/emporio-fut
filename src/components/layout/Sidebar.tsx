@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Package, ShoppingCart, Shirt, Menu, X, Truck } from "lucide-react";
+import { BarChart2, Package, ShoppingCart, Shirt, Menu, X, Truck, BookmarkCheck } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const nav = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart2 },
   { href: "/estoque", label: "Estoque", icon: Package },
   { href: "/vendas", label: "Vendas", icon: ShoppingCart },
+  { href: "/reservas", label: "Reservas", icon: BookmarkCheck },
   { href: "/pedidos", label: "Pedidos", icon: Truck },
 ];
 

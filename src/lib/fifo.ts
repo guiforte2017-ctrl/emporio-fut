@@ -52,6 +52,53 @@ export async function getAverageCostForModel(productModel: string): Promise<numb
 }
 
 // ---------------------------------------------------------------------------
+// AUTO-FULFILLMENT DE RESERVAS
+// Quando chega estoque novo, trava automaticamente para reservas pagas
+// ---------------------------------------------------------------------------
+
+export async function autoFulfillReservas(productId: number) {
+  // Get all unfulfilled items for paid reservas, oldest first
+  const candidates = await prisma.reservaItem.findMany({
+    where: {
+      productId,
+      reserva: { paymentStatus: "pago", status: { in: ["pendente", "parcial"] } },
+    },
+    include: { reserva: true },
+    orderBy: { reserva: { date: "asc" } },
+  });
+
+  // Filter to only truly unfulfilled items
+  const pendingItems = candidates.filter((i) => i.quantityFulfilled < i.quantityRequested);
+
+  for (const item of pendingItems) {
+    const stillNeeded = item.quantityRequested - item.quantityFulfilled;
+
+    const fresh = await prisma.product.findUnique({ where: { id: productId } });
+    if (!fresh || fresh.quantity <= 0) break;
+
+    const canFulfill = Math.min(stillNeeded, fresh.quantity);
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: { quantity: { decrement: canFulfill } },
+    });
+
+    const updatedItem = await prisma.reservaItem.update({
+      where: { id: item.id },
+      data: { quantityFulfilled: { increment: canFulfill } },
+    });
+
+    // Recalculate reserva status
+    const allItems = await prisma.reservaItem.findMany({ where: { reservaId: item.reservaId } });
+    const totalReq = allItems.reduce((s, i) => s + i.quantityRequested, 0);
+    const totalFul = allItems.reduce((s, i) => s + (i.id === updatedItem.id ? updatedItem.quantityFulfilled : i.quantityFulfilled), 0);
+    const newStatus = totalFul >= totalReq ? "concluida" : totalFul > 0 ? "parcial" : "pendente";
+
+    await prisma.reserva.update({ where: { id: item.reservaId }, data: { status: newStatus } });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // MAPEAMENTO DE ESTOQUE
 // ---------------------------------------------------------------------------
 

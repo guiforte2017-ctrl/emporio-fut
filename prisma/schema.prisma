@@ -19,7 +19,8 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  saleItems SaleItem[]
+  saleItems    SaleItem[]
+  reservaItems ReservaItem[]
 
   @@unique([team, model, size])
 }
@@ -71,6 +72,34 @@ model InventoryLot {
   createdAt   DateTime @default(now())
 
   order Order? @relation(fields: [orderId], references: [id])
+}
+
+model Reserva {
+  id              Int      @id @default(autoincrement())
+  customerName    String
+  customerContact String?
+  paymentStatus   String   @default("pendente") // pago | pendente
+  paymentMethod   String?
+  total           Float
+  notes           String?
+  status          String   @default("pendente") // pendente | parcial | concluida | cancelada
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items ReservaItem[]
+}
+
+model ReservaItem {
+  id                 Int @id @default(autoincrement())
+  reservaId          Int
+  productId          Int
+  quantityRequested  Int
+  quantityFulfilled  Int @default(0)
+  unitPrice          Float
+
+  reserva Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model SaleItem {

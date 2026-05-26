@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createLotsForOrder, autoStockEntry } from "@/lib/fifo";
+// prisma is also used directly in this file
+import { createLotsForOrder, autoStockEntry, autoFulfillReservas } from "@/lib/fifo";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({ where: { id: Number(params.id) } });
@@ -38,10 +39,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   // Only on the FIRST transition to "Entregue" — prevents duplicate stock entries
   if (body.status === "Entregue" && !wasAlreadyDelivered) {
-    await Promise.all([
-      createLotsForOrder(order.id),
-      autoStockEntry(order.id),
-    ]);
+    await createLotsForOrder(order.id);
+    await autoStockEntry(order.id);
+
+    // After stock is added, auto-fulfill pending paid reservas
+    const updatedProducts = await prisma.product.findMany({
+      where: { team: "Copa 2026" },
+      select: { id: true },
+    });
+    await Promise.all(updatedProducts.map((p) => autoFulfillReservas(p.id)));
   }
 
   return NextResponse.json(order);
