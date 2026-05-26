@@ -61,16 +61,16 @@ export function OrderTable() {
   return (
     <div className="flex flex-col gap-4">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Total pedidos",    value: `${orders.length} pedidos (${totalShirts} camisas)` },
           { label: "Custo total real", value: formatCurrency(totalCost), sub: `valor + impostos + embalagem` },
           { label: "Custo médio/un.", value: formatCurrency(totalShirts > 0 ? totalCost / totalShirts : 0) },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-surface-600 bg-surface-800 p-4">
-            <p className="text-xs text-gray-400">{s.label}</p>
-            <p className="text-lg font-bold text-gray-100 mt-1">{s.value}</p>
-            {"sub" in s && <p className="text-xs text-gray-500 mt-0.5">{s.sub}</p>}
+          <div key={s.label} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+            <p className="text-xs text-slate-500">{s.label}</p>
+            <p className="text-lg font-bold text-slate-800 mt-1">{s.value}</p>
+            {"sub" in s && <p className="text-xs text-slate-400 mt-0.5">{s.sub}</p>}
           </div>
         ))}
       </div>
@@ -100,61 +100,61 @@ export function OrderTable() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-surface-600 overflow-hidden">
+      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[1100px]">
             <thead>
-              <tr className="border-b border-surface-600 bg-surface-800">
-                <th className="text-left px-3 py-3 font-medium text-gray-400">#</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">Tipo</th>
-                <th className="text-right px-3 py-3 font-medium text-gray-400">Qtd</th>
-                <th className="text-right px-3 py-3 font-medium text-gray-400">Valor</th>
-                <th className="text-right px-3 py-3 font-medium text-gray-400">Impostos</th>
-                <th className="text-right px-3 py-3 font-medium text-gray-400">Embalagem</th>
-                <th className="text-right px-3 py-3 font-medium text-gray-400">Custo/un.</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">Data</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">Rastreio</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">Tamanhos</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">De Quem</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">Previsão</th>
-                <th className="text-left px-3 py-3 font-medium text-gray-400">Status</th>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="text-left px-3 py-3 font-medium text-slate-500">#</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">Tipo</th>
+                <th className="text-right px-3 py-3 font-medium text-slate-500">Qtd</th>
+                <th className="text-right px-3 py-3 font-medium text-slate-500">Valor</th>
+                <th className="text-right px-3 py-3 font-medium text-slate-500">Impostos</th>
+                <th className="text-right px-3 py-3 font-medium text-slate-500">Embalagem</th>
+                <th className="text-right px-3 py-3 font-medium text-slate-500">Custo/un.</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">Data</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">Rastreio</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">Tamanhos</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">De Quem</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">Previsão</th>
+                <th className="text-left px-3 py-3 font-medium text-slate-500">Status</th>
                 <th className="px-3 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={14} className="text-center py-12 text-gray-500">Carregando...</td></tr>
+                <tr><td colSpan={14} className="text-center py-12 text-slate-400">Carregando...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={14} className="text-center py-12 text-gray-500">Nenhum pedido encontrado</td></tr>
+                <tr><td colSpan={14} className="text-center py-12 text-slate-400">Nenhum pedido encontrado</td></tr>
               ) : (
                 orders.map((o, idx) => (
-                  <tr key={o.id} className="border-b border-surface-700 hover:bg-surface-800/50 transition-colors">
-                    <td className="px-3 py-2.5 text-gray-500 text-xs">{orders.length - idx}</td>
-                    <td className="px-3 py-2.5 font-medium text-gray-100 whitespace-nowrap">{o.type}</td>
-                    <td className="px-3 py-2.5 text-right text-gray-300">{o.quantity}</td>
-                    <td className="px-3 py-2.5 text-right text-gray-200">{formatCurrency(o.value)}</td>
-                    <td className="px-3 py-2.5 text-right text-yellow-400">{o.taxes ? formatCurrency(o.taxes) : <span className="text-gray-600">—</span>}</td>
-                    <td className="px-3 py-2.5 text-right text-orange-400">{o.packagingCost ? formatCurrency(o.packagingCost) : <span className="text-gray-600">—</span>}</td>
-                    <td className="px-3 py-2.5 text-right text-brand-400 font-medium text-xs">
+                  <tr key={o.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td className="px-3 py-2.5 text-slate-400 text-xs">{orders.length - idx}</td>
+                    <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">{o.type}</td>
+                    <td className="px-3 py-2.5 text-right text-slate-600">{o.quantity}</td>
+                    <td className="px-3 py-2.5 text-right text-slate-700">{formatCurrency(o.value)}</td>
+                    <td className="px-3 py-2.5 text-right text-amber-600">{o.taxes ? formatCurrency(o.taxes) : <span className="text-slate-300">—</span>}</td>
+                    <td className="px-3 py-2.5 text-right text-orange-500">{o.packagingCost ? formatCurrency(o.packagingCost) : <span className="text-slate-300">—</span>}</td>
+                    <td className="px-3 py-2.5 text-right text-brand-600 font-medium text-xs">
                       {formatCurrency((o.value + (o.taxes ?? 0) + (o.packagingCost ?? 0)) / o.quantity)}
                     </td>
-                    <td className="px-3 py-2.5 text-gray-400 whitespace-nowrap">{formatDate(o.orderDate)}</td>
+                    <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{formatDate(o.orderDate)}</td>
                     <td className="px-3 py-2.5">
                       {o.trackingCode ? (
                         <a
                           href={`https://rastreamento.correios.com.br/app/index.php?objeto=${o.trackingCode}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-brand-400 hover:text-brand-300 font-mono text-xs"
+                          className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-mono text-xs"
                         >
                           {o.trackingCode}
                           <ExternalLink className="h-3 w-3" />
                         </a>
-                      ) : <span className="text-gray-600">—</span>}
+                      ) : <span className="text-slate-300">—</span>}
                     </td>
-                    <td className="px-3 py-2.5 text-gray-400 text-xs">{o.sizes ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-gray-300 whitespace-nowrap">{o.orderedBy ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-gray-400 text-xs whitespace-nowrap">{o.estimatedArrival ?? "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-500 text-xs">{o.sizes ?? "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{o.orderedBy ?? "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">{o.estimatedArrival ?? "—"}</td>
                     <td className="px-3 py-2.5"><OrderStatusBadge status={o.status} /></td>
                     <td className="px-3 py-2.5">
                       <div className="flex gap-1">
@@ -182,7 +182,7 @@ export function OrderTable() {
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader><DialogTitle>Excluir pedido?</DialogTitle></DialogHeader>
-                            <p className="text-sm text-gray-400 mb-4">Pedido <strong className="text-gray-100">{o.type} — {o.trackingCode}</strong> será removido.</p>
+                            <p className="text-sm text-slate-500 mb-4">Pedido <strong className="text-slate-800">{o.type} — {o.trackingCode}</strong> será removido.</p>
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
                               <Button variant="destructive" onClick={() => handleDelete(o.id)}>Excluir</Button>
@@ -197,14 +197,14 @@ export function OrderTable() {
             </tbody>
             {orders.length > 0 && (
               <tfoot>
-                <tr className="border-t border-surface-600 bg-surface-800/50">
-                  <td colSpan={2} className="px-3 py-2.5 text-xs text-gray-500 font-medium">TOTAL ({orders.length} pedidos)</td>
-                  <td className="px-3 py-2.5 text-right text-gray-300 font-semibold">{totalShirts}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-100 font-semibold">{formatCurrency(totalValue)}</td>
-                  <td className="px-3 py-2.5 text-right text-yellow-400 font-semibold">{formatCurrency(totalTaxes)}</td>
-                  <td className="px-3 py-2.5 text-right text-orange-400 font-semibold">{formatCurrency(totalPackaging)}</td>
-                  <td className="px-3 py-2.5 text-right text-brand-400 font-semibold text-xs">{formatCurrency(totalShirts > 0 ? totalCost / totalShirts : 0)}</td>
-                  <td colSpan={5}></td>
+                <tr className="border-t border-slate-200 bg-slate-50">
+                  <td colSpan={2} className="px-3 py-2.5 text-xs text-slate-500 font-medium">TOTAL ({orders.length} pedidos)</td>
+                  <td className="px-3 py-2.5 text-right text-slate-700 font-semibold">{totalShirts}</td>
+                  <td className="px-3 py-2.5 text-right text-slate-800 font-semibold">{formatCurrency(totalValue)}</td>
+                  <td className="px-3 py-2.5 text-right text-amber-600 font-semibold">{formatCurrency(totalTaxes)}</td>
+                  <td className="px-3 py-2.5 text-right text-orange-500 font-semibold">{formatCurrency(totalPackaging)}</td>
+                  <td className="px-3 py-2.5 text-right text-brand-600 font-semibold text-xs">{formatCurrency(totalShirts > 0 ? totalCost / totalShirts : 0)}</td>
+                  <td colSpan={7}></td>
                 </tr>
               </tfoot>
             )}

@@ -11,6 +11,10 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json();
 
+  // Check current status BEFORE updating — only trigger stock entry on NEW "Entregue" transition
+  const existing = await prisma.order.findUnique({ where: { id: Number(params.id) } });
+  const wasAlreadyDelivered = existing?.status === "Entregue";
+
   const order = await prisma.order.update({
     where: { id: Number(params.id) },
     data: {
@@ -32,8 +36,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   });
 
-  // When order arrives: create FIFO lots + add items to product stock
-  if (body.status === "Entregue") {
+  // Only on the FIRST transition to "Entregue" — prevents duplicate stock entries
+  if (body.status === "Entregue" && !wasAlreadyDelivered) {
     await Promise.all([
       createLotsForOrder(order.id),
       autoStockEntry(order.id),

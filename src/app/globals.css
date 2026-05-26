@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 222 14% 7%;
-    --foreground: 210 40% 98%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
   }
 
   * {
-    border-color: #30363d;
+    border-color: #e2e8f0;
   }
 
   body {
-    @apply bg-surface-900 text-gray-100 antialiased;
+    @apply bg-surface-900 text-slate-800 antialiased;
   }
 
   ::-webkit-scrollbar {
     @apply w-1.5 h-1.5;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-surface-800;
+    @apply bg-surface-700;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-surface-500 rounded-full;
+    @apply bg-slate-300 rounded-full;
   }
 }

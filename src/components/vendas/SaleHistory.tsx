@@ -77,11 +77,11 @@ export function SaleHistory({ refresh }: { refresh: number }) {
     <div className="flex flex-col gap-4">
       {/* Pending summary banner */}
       {pendingTotal > 0 && statusFilter !== "pago" && (
-        <div className="flex items-center justify-between rounded-lg border border-yellow-700 bg-yellow-950/40 px-4 py-3 text-sm">
-          <span className="text-yellow-300 font-medium">
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <span className="text-amber-700 font-medium">
             {sales.filter((s) => s.paymentStatus === "pendente").length} venda(s) pendente(s)
           </span>
-          <span className="text-yellow-400 font-bold">{formatCurrency(pendingTotal)} a receber</span>
+          <span className="text-amber-800 font-bold">{formatCurrency(pendingTotal)} a receber</span>
         </div>
       )}
 
@@ -89,7 +89,7 @@ export function SaleHistory({ refresh }: { refresh: number }) {
       <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-38" />
-          <span className="text-gray-500 text-sm">até</span>
+          <span className="text-slate-400 text-sm">até</span>
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-38" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -119,36 +119,35 @@ export function SaleHistory({ refresh }: { refresh: number }) {
       </div>
 
       {/* List */}
-      <div className="rounded-xl border border-surface-600 overflow-hidden">
+      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
         {loading ? (
-          <div className="py-12 text-center text-gray-500 text-sm">Carregando...</div>
+          <div className="py-12 text-center text-slate-400 text-sm">Carregando...</div>
         ) : sales.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 text-sm">Nenhuma venda encontrada</div>
+          <div className="py-12 text-center text-slate-400 text-sm">Nenhuma venda encontrada</div>
         ) : (
           sales.map((sale) => (
-            <div key={sale.id} className="border-b border-surface-700 last:border-0">
+            <div key={sale.id} className="border-b border-slate-100 last:border-0">
               <div
-                className="flex items-center gap-3 px-4 py-3 hover:bg-surface-800/60 cursor-pointer"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer"
                 onClick={() => setExpanded(expanded === sale.id ? null : sale.id)}
               >
-                <span className="text-gray-500 shrink-0">
+                <span className="text-slate-400 shrink-0">
                   {expanded === sale.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </span>
-                <span className="text-sm text-gray-400 w-20 shrink-0">{formatDate(sale.date)}</span>
+                <span className="text-sm text-slate-500 w-20 shrink-0">{formatDate(sale.date)}</span>
 
                 <div className="flex-1 min-w-0">
                   {sale.customerName && (
-                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-0.5">
+                    <div className="flex items-center gap-1 text-xs text-slate-400 mb-0.5">
                       <User className="h-3 w-3" />
                       <span className="truncate">{sale.customerName}</span>
                     </div>
                   )}
-                  <span className="text-sm text-gray-200 truncate block">
+                  <span className="text-sm text-slate-700 truncate block">
                     {sale.items.map((i) => `${i.product.team} ${i.product.size}`).join(", ")}
                   </span>
                 </div>
 
-                {/* Payment status badge */}
                 <Badge
                   variant={sale.paymentStatus === "pago" ? "success" : "warning"}
                   className="shrink-0 hidden sm:flex"
@@ -160,7 +159,7 @@ export function SaleHistory({ refresh }: { refresh: number }) {
                   {PAYMENT_LABELS[sale.paymentMethod]}
                 </Badge>
 
-                <span className="text-brand-400 font-semibold text-sm shrink-0">{formatCurrency(sale.total)}</span>
+                <span className="text-brand-600 font-semibold text-sm shrink-0">{formatCurrency(sale.total)}</span>
 
                 <Dialog open={deleteId === sale.id} onOpenChange={(open) => !open && setDeleteId(null)}>
                   <DialogTrigger asChild>
@@ -175,7 +174,7 @@ export function SaleHistory({ refresh }: { refresh: number }) {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>Cancelar venda?</DialogTitle></DialogHeader>
-                    <p className="text-sm text-gray-400 mb-4">
+                    <p className="text-sm text-slate-500 mb-4">
                       Isso vai restaurar o estoque dos itens vendidos. Essa ação não pode ser desfeita.
                     </p>
                     <div className="flex justify-end gap-2">
@@ -187,10 +186,10 @@ export function SaleHistory({ refresh }: { refresh: number }) {
               </div>
 
               {expanded === sale.id && (
-                <div className="bg-surface-900/40 px-4 pb-3 pt-1">
+                <div className="bg-slate-50 px-4 pb-3 pt-1 border-t border-slate-100">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-gray-500">
+                      <tr className="text-slate-400">
                         <th className="text-left pb-1">Camisa</th>
                         <th className="text-right pb-1">Qtd</th>
                         <th className="text-right pb-1">Unit.</th>
@@ -199,7 +198,7 @@ export function SaleHistory({ refresh }: { refresh: number }) {
                     </thead>
                     <tbody>
                       {sale.items.map((item) => (
-                        <tr key={item.id} className="text-gray-300">
+                        <tr key={item.id} className="text-slate-600">
                           <td className="py-0.5">{item.product.team} — {MODEL_LABELS[item.product.model] ?? item.product.model} {item.product.size}</td>
                           <td className="text-right py-0.5">{item.quantity}</td>
                           <td className="text-right py-0.5">{formatCurrency(item.unitPrice)}</td>

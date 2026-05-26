@@ -15,14 +15,14 @@ const SelectTrigger = ({
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>) => (
   <SelectPrimitive.Trigger
     className={cn(
-      "flex h-9 w-full items-center justify-between rounded-lg border border-surface-500 bg-surface-700 px-3 py-1 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-9 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-gray-400" />
+      <ChevronDown className="h-4 w-4 text-slate-400" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 );
@@ -36,7 +36,7 @@ const SelectContent = ({
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-surface-500 bg-surface-800 text-gray-100 shadow-lg",
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800 shadow-lg",
         position === "popper" && "translate-y-1",
         className
       )}
@@ -62,7 +62,7 @@ const SelectItem = ({
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>) => (
   <SelectPrimitive.Item
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-surface-600 focus:bg-surface-600 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}
@@ -81,7 +81,7 @@ const SelectLabel = ({
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>) => (
   <SelectPrimitive.Label
-    className={cn("py-1.5 pl-8 pr-2 text-xs font-semibold text-gray-400", className)}
+    className={cn("py-1.5 pl-8 pr-2 text-xs font-semibold text-slate-500", className)}
     {...props}
   />
 );

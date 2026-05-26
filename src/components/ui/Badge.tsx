@@ -10,11 +10,11 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
         {
-          default: "bg-surface-600 text-gray-200",
-          success: "bg-brand-700 text-brand-100",
-          warning: "bg-yellow-900 text-yellow-300",
-          danger: "bg-red-900 text-red-300",
-          outline: "border border-surface-500 text-gray-300",
+          default: "bg-slate-100 text-slate-700",
+          success: "bg-green-100 text-green-700",
+          warning: "bg-amber-100 text-amber-700",
+          danger:  "bg-red-100 text-red-700",
+          outline: "border border-slate-300 text-slate-600",
         }[variant],
         className
       )}

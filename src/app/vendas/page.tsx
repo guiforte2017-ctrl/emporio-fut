@@ -20,8 +20,8 @@ export default function VendasPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Vendas</h1>
-          <p className="text-sm text-gray-400 mt-1">Registre e acompanhe suas vendas</p>
+          <h1 className="text-2xl font-bold text-slate-800">Vendas</h1>
+          <p className="text-sm text-slate-500 mt-1">Registre e acompanhe suas vendas</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
