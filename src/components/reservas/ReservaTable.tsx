@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, Phone, CheckCircle, Package } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Phone, CheckCircle, Package, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
@@ -35,6 +35,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
   parcial:   { label: "Parcial",   class: "bg-amber-100 text-amber-700 border border-amber-200" },
   concluida: { label: "Concluída", class: "bg-green-100 text-green-700 border border-green-200" },
   cancelada: { label: "Cancelada", class: "bg-red-100 text-red-600 border border-red-200" },
+  faturada:  { label: "Faturada",  class: "bg-purple-100 text-purple-700 border border-purple-200" },
 };
 
 function ProgressBar({ fulfilled, requested }: { fulfilled: number; requested: number }) {
@@ -86,7 +87,21 @@ export function ReservaTable() {
     fetchReservas();
   }
 
-  const pending = reservas.filter((r) => r.status !== "concluida" && r.status !== "cancelada");
+  async function handleFaturar(id: number) {
+    const res = await fetch(`/api/reservas/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ faturar: true }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error ?? "Erro ao faturar reserva");
+      return;
+    }
+    fetchReservas();
+  }
+
+  const pending = reservas.filter((r) => r.status !== "concluida" && r.status !== "cancelada" && r.status !== "faturada");
   const totalPending = pending.reduce((s, r) => s + r.total, 0);
 
   return (
@@ -121,6 +136,7 @@ export function ReservaTable() {
             <SelectItem value="parcial">Parcial</SelectItem>
             <SelectItem value="concluida">Concluída</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
+            <SelectItem value="faturada">Faturada</SelectItem>
           </SelectContent>
         </Select>
         <div className="sm:ml-auto">
@@ -192,6 +208,17 @@ export function ReservaTable() {
                       className="shrink-0 rounded-lg p-1.5 text-amber-500 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                     >
                       <CheckCircle className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  {/* Faturar: register as sale */}
+                  {r.paymentStatus === "pago" && r.status !== "faturada" && r.items.some((i) => i.quantityFulfilled > 0) && (
+                    <button
+                      title="Registrar como venda"
+                      onClick={(e) => { e.stopPropagation(); handleFaturar(r.id); }}
+                      className="shrink-0 rounded-lg p-1.5 text-purple-500 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
                     </button>
                   )}
 
