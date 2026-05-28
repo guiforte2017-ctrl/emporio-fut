@@ -99,6 +99,7 @@ export function ProductTable() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [adjusting, setAdjusting] = useState<number | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -113,6 +114,19 @@ export function ProductTable() {
     await fetch(`/api/products/${id}`, { method: "DELETE" });
     setDeleteId(null);
     fetchProducts();
+  }
+
+  async function handleDelta(id: number, delta: number, currentQty: number) {
+    if (delta < 0 && currentQty <= 0) return;
+    setAdjusting(id);
+    // optimistic update
+    setProducts((prev) => prev.map((p) => p.id === id ? { ...p, quantity: p.quantity + delta } : p));
+    await fetch(`/api/products/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ delta }),
+    });
+    setAdjusting(null);
   }
 
   // Group products by model
@@ -186,79 +200,102 @@ export function ProductTable() {
 
               {/* Sizes grid */}
               <div className="p-3">
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-1.5">
                   {SIZES.map((size) => {
                     const p = sizes[size];
                     const qty = p?.quantity ?? 0;
+                    const busy = adjusting === p?.id;
 
                     return (
                       <div
                         key={size}
-                        className={`relative group rounded-lg border text-center py-2 px-1 ${qty > 0 ? cfg.chipActive : cfg.chip}`}
+                        className={`rounded-xl border text-center flex flex-col overflow-hidden ${qty > 0 ? cfg.chipActive : cfg.chip}`}
                       >
-                        <p className="text-xs text-slate-400 mb-1">{size}</p>
-                        <p className={`text-base leading-none ${qtyColor(qty)}`}>
-                          {qty <= 2 && qty > 0 && <AlertTriangle className="inline h-3 w-3 mr-0.5 mb-0.5" />}
+                        {/* Size label */}
+                        <p className="text-[10px] text-slate-400 pt-2 leading-none">{size}</p>
+
+                        {/* Quantity */}
+                        <p className={`text-xl font-bold leading-none py-2 ${qtyColor(qty)}`}>
                           {qty}
                         </p>
 
-                        {/* Edit/delete on hover */}
-                        {p && (
-                          <div className="absolute inset-0 rounded-lg bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                            <Dialog open={editProduct?.id === p.id} onOpenChange={(open) => !open && setEditProduct(null)}>
-                              <DialogTrigger asChild>
-                                <button
-                                  onClick={() => setEditProduct(p)}
-                                  className="rounded p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader><DialogTitle>Editar {model} {size}</DialogTitle></DialogHeader>
-                                <ProductForm
-                                  initial={p}
-                                  onSuccess={() => { setEditProduct(null); fetchProducts(); }}
-                                  onCancel={() => setEditProduct(null)}
-                                />
-                              </DialogContent>
-                            </Dialog>
-
-                            <Dialog open={deleteId === p.id} onOpenChange={(open) => !open && setDeleteId(null)}>
-                              <DialogTrigger asChild>
-                                <button
-                                  onClick={() => setDeleteId(p.id)}
-                                  className="rounded p-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader><DialogTitle>Excluir {model} {size}?</DialogTitle></DialogHeader>
-                                <p className="text-sm text-slate-500 mb-4">Essa ação não pode ser desfeita.</p>
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
-                                  <Button variant="destructive" onClick={() => handleDelete(p.id)}>Excluir</Button>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        )}
+                        {/* +/- buttons */}
+                        <div className="flex border-t border-current/10">
+                          <button
+                            disabled={!p || qty <= 0 || busy}
+                            onClick={() => p && handleDelta(p.id, -1, qty)}
+                            className="flex-1 py-2 text-slate-500 hover:bg-red-50 hover:text-red-500 active:bg-red-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-base font-bold leading-none"
+                          >
+                            −
+                          </button>
+                          <span className="w-px bg-current opacity-10" />
+                          <button
+                            disabled={!p || busy}
+                            onClick={() => p && handleDelta(p.id, +1, qty)}
+                            className="flex-1 py-2 text-slate-500 hover:bg-green-50 hover:text-green-600 active:bg-green-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-base font-bold leading-none"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Cost + total */}
+                {/* Cost + total + edit/delete */}
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 border-t border-current/10 pt-2">
                   <span>
                     Custo: <strong>{firstProduct ? formatCurrency(firstProduct.costPrice) : "—"}</strong>
-                  </span>
-                  <span>
+                    &nbsp;·&nbsp;
                     Total: <strong className={hasAny ? "text-slate-700" : "text-slate-400"}>
                       {Object.values(sizes).reduce((s, p) => s + (p.quantity ?? 0), 0)} un.
                     </strong>
                   </span>
+                  <div className="flex gap-1">
+                    {firstProduct && (
+                      <>
+                        <Dialog open={editProduct?.id === firstProduct.id} onOpenChange={(open) => !open && setEditProduct(null)}>
+                          <DialogTrigger asChild>
+                            <button
+                              onClick={() => setEditProduct(firstProduct)}
+                              title="Editar preços"
+                              className="rounded-lg p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader><DialogTitle>Editar {model}</DialogTitle></DialogHeader>
+                            <ProductForm
+                              initial={firstProduct}
+                              onSuccess={() => { setEditProduct(null); fetchProducts(); }}
+                              onCancel={() => setEditProduct(null)}
+                            />
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={deleteId === firstProduct.id} onOpenChange={(open) => !open && setDeleteId(null)}>
+                          <DialogTrigger asChild>
+                            <button
+                              onClick={() => setDeleteId(firstProduct.id)}
+                              title="Excluir produto"
+                              className="rounded-lg p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader><DialogTitle>Excluir {model}?</DialogTitle></DialogHeader>
+                            <p className="text-sm text-slate-500 mb-4">Essa ação não pode ser desfeita.</p>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+                              <Button variant="destructive" onClick={() => handleDelete(firstProduct.id)}>Excluir</Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
